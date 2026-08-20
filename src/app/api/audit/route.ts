@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { JSDOM } from 'jsdom';
 import puppeteer from 'puppeteer';
 
-// --- Existing Capo.js Weights & Colors ---
 const WEIGHTS = { META: 10, TITLE: 9, PRECONNECT: 8, ASYNC_SCRIPT: 7, IMPORT_STYLES: 6, SYNC_SCRIPT: 5, SYNC_STYLES: 4, PRELOAD: 3, DEFER_SCRIPT: 2, PREFETCH_PRERENDER: 1, OTHER: 0 };
-const COLORS = { [WEIGHTS.META]: '#9e0142', [WEIGHTS.TITLE]: '#d53e4f', [WEIGHTS.PRECONNECT]: '#f46d43', [WEIGHTS.ASYNC_SCRIPT]: '#fdae61', [WEIGHTS.IMPORT_STYLES]: '#fee08b', [WEIGHTS.SYNC_SCRIPT]: '#e6f598', [WEIGHTS.SYNC_STYLES]: '#abdda4', [WEIGHTS.PRELOAD]: '#66c2a5', [WEIGHTS.DEFER_SCRIPT]: '#3288bd', [WEIGHTS.PREFETCH_PRERENDER]: '#5e4fa2', [WEIGHTS.OTHER]: '#cccccc' };
+const COLORS: Record<number, string> = { [WEIGHTS.META]: '#9e0142', [WEIGHTS.TITLE]: '#d53e4f', [WEIGHTS.PRECONNECT]: '#f46d43', [WEIGHTS.ASYNC_SCRIPT]: '#fdae61', [WEIGHTS.IMPORT_STYLES]: '#fee08b', [WEIGHTS.SYNC_SCRIPT]: '#e6f598', [WEIGHTS.SYNC_STYLES]: '#abdda4', [WEIGHTS.PRELOAD]: '#66c2a5', [WEIGHTS.DEFER_SCRIPT]: '#3288bd', [WEIGHTS.PREFETCH_PRERENDER]: '#5e4fa2', [WEIGHTS.OTHER]: '#cccccc' };
 
 function getElementWeight(el: Element): number {
   const tag = el.tagName.toLowerCase();
@@ -41,17 +39,19 @@ async function getHtmlContent(url: string): Promise<string> {
     const html = await page.content();
     await browser.close();
     return html;
-  } catch (err: any) {
+  } catch (err: unknown) {
     await browser.close();
-    throw new Error(`Browser fetch failed: ${err.message}`);
+    const msg = err instanceof Error ? err.message : 'Browser fetch failed';
+    throw new Error(msg);
   }
 }
 
+type ElementRecord = { tagName: string; weight: number; html: string; color: string; sizeInBytes: number };
+type ViolationRecord = { element: string; html: string; severity: string; impactedMetric: string; issue: string; recommendation: string };
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    
-    // Support both single 'url' and batch 'urls' array
+    const body = await req.json() as { url?: string; urls?: string[] };
     const targetUrl = body.urls && body.urls.length > 0 ? body.urls[0] : body.url;
 
     if (!targetUrl || !targetUrl.startsWith('http')) return NextResponse.json({ error: 'Invalid URL.' }, { status: 400 });
@@ -64,8 +64,8 @@ export async function POST(req: Request) {
     if (!head) return NextResponse.json({ error: 'No <head> found.' }, { status: 422 });
 
     const headByteSize = getByteSize(head.outerHTML);
-    const originalElements: any[] = [];
-    const violations: any[] = [];
+    const originalElements: ElementRecord[] = [];
+    const violations: ViolationRecord[] = [];
     let lowestWeightSeen = 11;
 
     Array.from(head.children).forEach((el) => {
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
       const outerHTML = el.outerHTML.trim();
       const elByteSize = getByteSize(outerHTML);
       
-      const elementData = { tagName: el.tagName.toLowerCase(), weight, html: outerHTML, color: COLORS[weight] || COLORS[WEIGHTS.OTHER], sizeInBytes: elByteSize };
+      const elementData: ElementRecord = { tagName: el.tagName.toLowerCase(), weight, html: outerHTML, color: COLORS[weight] || COLORS[WEIGHTS.OTHER], sizeInBytes: elByteSize };
       originalElements.push(elementData);
 
       if ((elementData.tagName === 'script' || elementData.tagName === 'style') && elByteSize > 50000) {
@@ -102,7 +102,6 @@ export async function POST(req: Request) {
       }
     });
 
-    // Generate Optimized Elements, stripping massive inline tags for the final snippet
     const optimizedElements = [...originalElements].map(el => {
       if ((el.tagName === 'script' || el.tagName === 'style') && el.sizeInBytes > 50000) {
         return { ...el, html: `<!-- Extracted inline ${el.tagName} (${Math.round(el.sizeInBytes / 1024)}KB) to external file for Googlebot Limits -->` };
@@ -130,7 +129,8 @@ export async function POST(req: Request) {
         optimizedHeadPercentage: Math.round((optimizedHeadByteSize / optimizedHtmlByteSize) * 100)
       }
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
