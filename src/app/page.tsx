@@ -295,7 +295,7 @@ export default function Auditor() {
       {result && !batchResults && (
         <main className="max-w-6xl mx-auto px-6 py-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           
-          {/* Top 3 Metric Cards (3 Columns) */}
+          {/* Top 3 Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-center">
               <span className="text-sm font-medium text-slate-400 mb-2">Order Score</span>
@@ -314,21 +314,31 @@ export default function Auditor() {
             </div>
           </div>
 
-          {/* Full-width Crawl Horizon Warning */}
+          {/* Full-width Crawl Horizon Warning with Optimized Comparison */}
           {result.crawlerLimits && (
             <div className={cn("w-full border rounded-xl p-6 mb-8 flex flex-col justify-center transition-colors", result.crawlerLimits.htmlByteSize > 2000000 ? "bg-red-950/20 border-red-900/50" : "bg-slate-900 border-slate-800")}>
               <span className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
                 <Database className="w-4 h-4" /> Crawl Horizon
               </span>
-              <div className="flex items-baseline gap-2 mb-1">
+              <div className="flex items-baseline gap-2 mb-2">
                 <span className={cn("text-3xl font-bold", result.crawlerLimits.htmlByteSize > 2000000 ? "text-red-500" : "text-slate-100")}>
                   {(result.crawlerLimits.htmlByteSize / 1024 / 1024).toFixed(2)} MB
                 </span>
                 <span className="text-sm text-slate-500">/ 2.0 MB Max</span>
               </div>
-              <p className="text-sm text-slate-400 mt-2 leading-tight">
-                The &lt;head&gt; bloat consumes {result.crawlerLimits.headPercentage}% of your crawler allowance.
-              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-800/80">
+                <div className="bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+                  <span className="text-xs text-slate-400 block font-medium mb-1">Current &lt;head&gt; Allowance</span>
+                  <span className="text-lg font-bold text-red-400">{result.crawlerLimits.headPercentage}% of 2 MB Crawl Budget</span>
+                  <span className="text-xs text-slate-500 block mt-0.5">({(result.crawlerLimits.headByteSize / 1024).toFixed(1)} KB)</span>
+                </div>
+                <div className="bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+                  <span className="text-xs text-slate-400 block font-medium mb-1">Optimized &lt;head&gt; Allowance</span>
+                  <span className="text-lg font-bold text-green-400">{result.crawlerLimits.optimizedHeadPercentage}% of 2 MB Crawl Budget</span>
+                  <span className="text-xs text-slate-500 block mt-0.5">({(result.crawlerLimits.optimizedHeadByteSize / 1024).toFixed(1)} KB)</span>
+                </div>
+              </div>
             </div>
           )}
 
