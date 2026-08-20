@@ -1,4 +1,4 @@
-&lt;head&gt; Analyser/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
@@ -87,7 +87,6 @@ export default function Auditor() {
         setBatchProgress({ current: 0, total: urlsToProcess.length });
         const resultsArray: AuditResult[] = [];
 
-        // Process sequentially to prevent Puppeteer/API crashes
         for (let i = 0; i < urlsToProcess.length; i++) {
           setBatchProgress({ current: i + 1, total: urlsToProcess.length });
           try {
@@ -130,7 +129,7 @@ export default function Auditor() {
     }
   };
 
-  const runPageSpeedBenchmark = async () => { /* ... existing logic ... */ 
+  const runPageSpeedBenchmark = async () => { 
     if (!result?.url) return;
     setPsiLoading(true);
     try {
@@ -145,7 +144,7 @@ export default function Auditor() {
     }
   };
 
-  const runRealWorldValidation = async () => { /* ... existing logic ... */ 
+  const runRealWorldValidation = async () => { 
     if (!result) return;
     setRealWorldLoading(true);
     try {
@@ -191,10 +190,10 @@ export default function Auditor() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center gap-3 mb-4">
             <Activity className="w-8 h-8 text-indigo-400" />
-            <h1 className="text-3xl font-bold text-white tracking-tight"> &lt;head&gt; Auditor</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight"> &lt;head&gt; Analyser</h1>
           </div>
           <p className="text-slate-400 mb-8 max-w-2xl">
-            Analyze, visualize, and optimize the ordering of your document&apos;s `&lt;head&gt;` elements based on the .js specification to drastically improve First Contentful Paint.
+            Analyze, visualize, and optimize the ordering of your document&apos;s &lt;head&gt; elements based on the .js specification to drastically improve First Contentful Paint.
           </p>
 
           <form onSubmit={handleAudit} className="max-w-3xl space-y-4">
@@ -292,12 +291,14 @@ export default function Auditor() {
         </main>
       )}
 
-      {/* --- SINGLE RESULT VIEW (Unchanged) --- */}
+      {/* --- SINGLE RESULT VIEW --- */}
       {result && !batchResults && (
         <main className="max-w-6xl mx-auto px-6 py-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          
+          {/* Top 3 Metric Cards (3 Columns) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-center">
-              <span className="text-sm font-medium text-slate-400 mb-2"> Order Score</span>
+              <span className="text-sm font-medium text-slate-400 mb-2">Order Score</span>
               <div className="flex items-end gap-3"><span className={cn("text-5xl font-bold", result.score > 80 ? "text-green-400" : result.score > 50 ? "text-yellow-400" : "text-red-400")}>{result.score}%</span></div>
             </div>
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-center">
@@ -311,19 +312,25 @@ export default function Auditor() {
                 {result.violations.length === 0 && <CheckCircle2 className="w-8 h-8 text-green-500" />}
               </div>
             </div>
-            {result.crawlerLimits && (
-              <div className={cn("border rounded-xl p-6 flex flex-col justify-center transition-colors", result.crawlerLimits.htmlByteSize > 2000000 ? "bg-red-950/30 border-red-900/50" : "bg-slate-900 border-slate-800")}>
-                <span className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2"><Database className="w-4 h-4" /> Crawl Horizon</span>
-                <div>
-                  <span className={cn("text-3xl font-bold", result.crawlerLimits.htmlByteSize > 2000000 ? "text-red-400" : "text-slate-100")}>{(result.crawlerLimits.htmlByteSize / 1024 / 1024).toFixed(2)} MB</span>
-                  <span className="text-xs text-slate-500 ml-2">/ 2.0 MB Max</span>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-2 leading-tight">
-                  `&lt;head&gt;` bloat consumes {result.crawlerLimits.headPercentage}% of your crawler allowance.
-                </p>
-              </div>
-            )}
           </div>
+
+          {/* Full-width Crawl Horizon Warning */}
+          {result.crawlerLimits && (
+            <div className={cn("w-full border rounded-xl p-6 mb-8 flex flex-col justify-center transition-colors", result.crawlerLimits.htmlByteSize > 2000000 ? "bg-red-950/20 border-red-900/50" : "bg-slate-900 border-slate-800")}>
+              <span className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
+                <Database className="w-4 h-4" /> Crawl Horizon
+              </span>
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className={cn("text-3xl font-bold", result.crawlerLimits.htmlByteSize > 2000000 ? "text-red-500" : "text-slate-100")}>
+                  {(result.crawlerLimits.htmlByteSize / 1024 / 1024).toFixed(2)} MB
+                </span>
+                <span className="text-sm text-slate-500">/ 2.0 MB Max</span>
+              </div>
+              <p className="text-sm text-slate-400 mt-2 leading-tight">
+                The &lt;head&gt; bloat consumes {result.crawlerLimits.headPercentage}% of your crawler allowance.
+              </p>
+            </div>
+          )}
 
           <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -351,7 +358,7 @@ export default function Auditor() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-semibold text-white flex items-center gap-2"><Play className="w-5 h-5 text-indigo-400 fill-indigo-400/20" /> Real-World Headless Chrome Validation</h2>
-                <p className="text-sm text-slate-400 mt-1">Executes a live browser test intercepting the HTML to swap the `&lt;head&gt;` in real-time.</p>
+                <p className="text-sm text-slate-400 mt-1">Executes a live browser test intercepting the HTML to swap the &lt;head&gt; in real-time.</p>
               </div>
               <div title={!psiResult ? "Run the PSI Benchmark before running the real world test." : ""}>
                 <button onClick={runRealWorldValidation} disabled={realWorldLoading || !psiResult} className="bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 px-5 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -383,7 +390,7 @@ export default function Auditor() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-2 uppercase tracking-wider font-semibold">Optimal  Order</label>
+                <label className="block text-sm text-slate-400 mb-2 uppercase tracking-wider font-semibold">Optimal Order</label>
                 <div className="flex h-12 w-full rounded overflow-hidden shadow-inner bg-slate-950">
                   {result.optimizedElements.map((el, i) => (<div key={i} className="h-full border-r border-slate-950/20 hover:opacity-80 transition cursor-help" style={{ width: `${100 / result.optimizedElements.length}%`, backgroundColor: el.color }} title={`<${el.tagName}> (Weight: ${el.weight})`} />))}
                 </div>
