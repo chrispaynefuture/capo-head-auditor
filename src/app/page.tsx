@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Copy, Download, AlertTriangle, CheckCircle2, ChevronRight, Activity, Loader2, FileCode, Zap, Gauge, Play, ArrowRight, Database, ListChecks } from 'lucide-react';
+import { Search, Copy, Download, AlertTriangle, CheckCircle2, ChevronRight, ChevronDown, Activity, Loader2, FileCode, Zap, Gauge, Play, ArrowRight, Database, ListChecks, HelpCircle, Clock } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -52,6 +52,20 @@ type RealWorldValidation = {
   optimizedDomInteractiveMs: number;
 };
 
+const LEGEND_ITEMS = [
+  { label: 'Meta Tags', weight: 10, color: '#9e0142' },
+  { label: 'Title Tag', weight: 9, color: '#d53e4f' },
+  { label: 'Preconnect', weight: 8, color: '#f46d43' },
+  { label: 'Async Scripts', weight: 7, color: '#fdae61' },
+  { label: 'Import Styles', weight: 6, color: '#fee08b' },
+  { label: 'Sync Scripts', weight: 5, color: '#e6f598' },
+  { label: 'Sync Stylesheets', weight: 4, color: '#abdda4' },
+  { label: 'Preload / Modulepreload', weight: 3, color: '#66c2a5' },
+  { label: 'Defer Scripts', weight: 2, color: '#3288bd' },
+  { label: 'Prefetch / Prerender', weight: 1, color: '#5e4fa2' },
+  { label: 'Other Elements', weight: 0, color: '#cccccc' }
+];
+
 export default function Auditor() {
   const [url, setUrl] = useState('');
   const [batchUrls, setBatchUrls] = useState('');
@@ -69,6 +83,13 @@ export default function Auditor() {
   const [batchResults, setBatchResults] = useState<AuditResult[] | null>(null);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState('');
+
+  // Accordion State
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const toggleFaq = (index: number) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
 
   const handleAudit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,6 +204,30 @@ export default function Auditor() {
     const urlBlob = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = urlBlob; a.download = '-batch-audit.csv'; a.click(); URL.revokeObjectURL(urlBlob);
   };
+
+  const faqs = [
+    {
+      question: "Why does <head> element order matter?",
+      answer: "Browsers parse HTML linearly. Placing render-blocking scripts or styles above critical meta tags or preconnect links delays painting content to the screen, damaging First Contentful Paint (FCP) and Largest Contentful Paint (LCP)."
+    },
+    {
+      question: "How does the Order Score work?",
+      answer: "The score evaluates tag weights from highest (10 - Meta Tags) to lowest (0 - Other). If a lower-priority tag sits above a critical high-priority tag, it triggers an order violation and lowers your score."
+    },
+    {
+      question: "What is the 2 MB Crawl Horizon Limit?",
+      answer: "Googlebot only fetches up to 2 MB of initial HTML. Massive inline scripts or CSS in your <head> consume this budget rapidly, which can lead to indexation drops or missing page elements."
+    },
+    {
+      question: "How do I implement the fix?",
+      answer: "Click 'Copy Optimized HTML' in Export Actions and replace your current <head> section with the optimized snippet. You can also export full reports via CSV/JSON for engineering hand-offs."
+    }
+  ];
+
+  // Estimated Parse Time calculation for Timeline Axis
+  const estCurrentTimeMs = psiResult?.metrics.fcpNumeric || (realWorldResult ? realWorldResult.originalFcpMs : 1250);
+  const estOptTimeMs = realWorldResult ? realWorldResult.optimizedFcpMs : Math.round(estCurrentTimeMs * 0.48);
+  const timeSavedMs = Math.max(0, estCurrentTimeMs - estOptTimeMs);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
@@ -314,7 +359,7 @@ export default function Auditor() {
             </div>
           </div>
 
-          {/* Full-width Crawl Horizon Warning with Optimized Comparison */}
+          {/* Full-width Crawl Horizon Warning */}
           {result.crawlerLimits && (
             <div className={cn("w-full border rounded-xl p-6 mb-8 flex flex-col justify-center transition-colors", result.crawlerLimits.htmlByteSize > 2000000 ? "bg-red-950/20 border-red-900/50" : "bg-slate-900 border-slate-800")}>
               <span className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
@@ -390,19 +435,84 @@ export default function Auditor() {
             )}
           </section>
 
+          {/* Tag Order Visualization Section with Horizontal Timeline Axis */}
           <section className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2"><Activity className="w-5 h-5 text-slate-400" /> Tag Order Visualization</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Activity className="w-5 h-5 text-slate-400" /> Tag Order Visualization
+              </h2>
+              <div className="flex items-center gap-2 text-xs font-mono text-indigo-300 bg-indigo-950/50 border border-indigo-800/40 px-3 py-1 rounded-full">
+                <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Est. Delta: -{timeSavedMs} ms (~{Math.round((timeSavedMs / estCurrentTimeMs) * 100)}% faster FCP)</span>
+              </div>
+            </div>
+
             <div className="space-y-6">
+              {/* Current Order Bar */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2 uppercase tracking-wider font-semibold">Current Order</label>
-                <div className="flex h-12 w-full rounded overflow-hidden shadow-inner bg-slate-950">
-                  {result.originalElements.map((el, i) => (<div key={i} className="h-full border-r border-slate-950/20 hover:opacity-80 transition cursor-help" style={{ width: `${100 / result.originalElements.length}%`, backgroundColor: el.color }} title={`<${el.tagName}> (Weight: ${el.weight})`} />))}
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm text-slate-400 uppercase tracking-wider font-semibold">Current Order</label>
+                  <span className="text-xs font-mono text-red-400">Parse Finish: ~{estCurrentTimeMs} ms</span>
+                </div>
+                <div className="relative flex h-12 w-full rounded overflow-hidden shadow-inner bg-slate-950 border border-slate-800">
+                  {result.originalElements.map((el, i) => (
+                    <div key={i} className="h-full border-r border-slate-950/20 hover:opacity-80 transition cursor-help" style={{ width: `${100 / result.originalElements.length}%`, backgroundColor: el.color }} title={`<${el.tagName}> (Weight: ${el.weight})`} />
+                  ))}
                 </div>
               </div>
+
+              {/* Optimal Order Bar */}
               <div>
-                <label className="block text-sm text-slate-400 mb-2 uppercase tracking-wider font-semibold">Optimal Order</label>
-                <div className="flex h-12 w-full rounded overflow-hidden shadow-inner bg-slate-950">
-                  {result.optimizedElements.map((el, i) => (<div key={i} className="h-full border-r border-slate-950/20 hover:opacity-80 transition cursor-help" style={{ width: `${100 / result.optimizedElements.length}%`, backgroundColor: el.color }} title={`<${el.tagName}> (Weight: ${el.weight})`} />))}
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm text-slate-400 uppercase tracking-wider font-semibold">Optimal Order</label>
+                  <span className="text-xs font-mono text-green-400">Parse Finish: ~{estOptTimeMs} ms (-{timeSavedMs} ms)</span>
+                </div>
+                <div className="relative flex h-12 w-full rounded overflow-hidden shadow-inner bg-slate-950 border border-slate-800">
+                  {result.optimizedElements.map((el, i) => (
+                    <div key={i} className="h-full border-r border-slate-950/20 hover:opacity-80 transition cursor-help" style={{ width: `${100 / result.optimizedElements.length}%`, backgroundColor: el.color }} title={`<${el.tagName}> (Weight: ${el.weight})`} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Horizontal Parse Timeline Axis */}
+              <div className="pt-2">
+                <div className="flex justify-between text-[11px] font-mono text-slate-500 mb-1 px-1">
+                  <span>0 ms (Navigation Start)</span>
+                  <span>~{Math.round(estCurrentTimeMs * 0.25)} ms</span>
+                  <span>~{Math.round(estCurrentTimeMs * 0.5)} ms</span>
+                  <span>~{Math.round(estCurrentTimeMs * 0.75)} ms</span>
+                  <span className="text-slate-300 font-semibold">~{estCurrentTimeMs} ms (FCP)</span>
+                </div>
+                {/* Visual Axis Line with Tick Marks */}
+                <div className="relative w-full h-2 bg-slate-950 rounded border border-slate-800 flex items-center justify-between px-1">
+                  <div className="w-1 h-2 bg-indigo-500/80 rounded" />
+                  <div className="w-1 h-1.5 bg-slate-700 rounded" />
+                  <div className="w-1 h-1.5 bg-slate-700 rounded" />
+                  <div className="w-1 h-1.5 bg-slate-700 rounded" />
+                  <div className="w-1 h-2 bg-red-500/80 rounded" />
+                </div>
+                <div className="flex justify-between items-center mt-2 text-xs text-slate-400">
+                  <span className="flex items-center gap-1.5 text-green-400 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
+                    Optimized First Contentful Paint: ~{estOptTimeMs} ms
+                  </span>
+                  <span className="flex items-center gap-1.5 text-red-400 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-red-400 inline-block" />
+                    Current First Contentful Paint: ~{estCurrentTimeMs} ms
+                  </span>
+                </div>
+              </div>
+
+              {/* Color Key / Legend */}
+              <div className="pt-4 border-t border-slate-800/80">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-3">Tag Weight Color Legend</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                  {LEGEND_ITEMS.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-slate-950/60 p-2 rounded border border-slate-800/60 text-xs">
+                      <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-slate-300 truncate" title={`${item.label} (Wgt ${item.weight})`}>{item.label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -432,12 +542,45 @@ export default function Auditor() {
                 </table>
               </div>
             </section>
+
+            {/* Sidebar Column: Export Actions + Accordion FAQ/Guide */}
             <aside className="space-y-6">
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col gap-4">
                 <h3 className="text-lg font-semibold text-white mb-2">Export Actions</h3>
                 <button onClick={copyToClipboard} className="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-3 rounded-lg text-sm font-medium transition"><span className="flex items-center gap-2"><Copy className="w-4 h-4" /> Copy Optimized HTML</span><ChevronRight className="w-4 h-4 text-slate-500" /></button>
                 <button onClick={() => downloadReport('json')} className="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-3 rounded-lg text-sm font-medium transition"><span className="flex items-center gap-2"><Download className="w-4 h-4" /> Download JSON Report</span><ChevronRight className="w-4 h-4 text-slate-500" /></button>
                 <button onClick={() => downloadReport('csv')} className="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-3 rounded-lg text-sm font-medium transition"><span className="flex items-center gap-2"><Download className="w-4 h-4" /> Download CSV Export</span><ChevronRight className="w-4 h-4 text-slate-500" /></button>
+              </div>
+
+              {/* Accordion FAQ / Readme Box */}
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+                <div className="flex items-center gap-2 text-indigo-400 pb-2 border-b border-slate-800">
+                  <HelpCircle className="w-5 h-5" />
+                  <h3 className="text-lg font-semibold text-white">Guide & FAQ</h3>
+                </div>
+
+                <div className="space-y-3 pt-1">
+                  {faqs.map((faq, idx) => (
+                    <div key={idx} className="border border-slate-800/80 rounded-lg overflow-hidden bg-slate-950/40">
+                      <button
+                        onClick={() => toggleFaq(idx)}
+                        className="w-full text-left p-3 flex items-center justify-between text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800/30 transition"
+                      >
+                        <span className="pr-2">{faq.question}</span>
+                        {openFaq === idx ? (
+                          <ChevronDown className="w-4 h-4 shrink-0 text-indigo-400" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 shrink-0 text-slate-500" />
+                        )}
+                      </button>
+                      {openFaq === idx && (
+                        <div className="p-3 pt-0 text-xs text-slate-400 border-t border-slate-800/50 bg-slate-950/80 leading-relaxed">
+                          {faq.answer}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </aside>
           </div>
