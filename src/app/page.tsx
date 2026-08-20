@@ -190,10 +190,10 @@ export default function Auditor() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center gap-3 mb-4">
             <Activity className="w-8 h-8 text-indigo-400" />
-            <h1 className="text-3xl font-bold text-white tracking-tight"> &lt;head&gt; Analyser</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight">&lt;head&gt; Analyser</h1>
           </div>
           <p className="text-slate-400 mb-8 max-w-2xl">
-            Analyze, visualize, and optimize the ordering of your document&apos;s &lt;head&gt; elements based on the .js specification to drastically improve First Contentful Paint.
+            Analyze, visualize, and optimize the ordering of your document&apos;s &lt;head&gt; elements to drastically improve First Contentful Paint.
           </p>
 
           <form onSubmit={handleAudit} className="max-w-3xl space-y-4">
