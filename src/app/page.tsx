@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+&lt;head&gt; Analyser/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
@@ -52,7 +52,7 @@ type RealWorldValidation = {
   optimizedDomInteractiveMs: number;
 };
 
-export default function CapoAuditor() {
+export default function Auditor() {
   const [url, setUrl] = useState('');
   const [batchUrls, setBatchUrls] = useState('');
   const [isBatchMode, setIsBatchMode] = useState(false);
@@ -164,7 +164,7 @@ export default function CapoAuditor() {
 
   const downloadReport = (type: 'json' | 'csv') => {
     if (!result) return;
-    let content = ''; let filename = `capo-audit-${new URL(result.url).hostname}`;
+    let content = ''; let filename = `-audit-${new URL(result.url).hostname}`;
     if (type === 'json') { content = JSON.stringify({ ...result, pageSpeed: psiResult, realWorldValidation: realWorldResult }, null, 2); filename += '.json'; }
     else { content = 'Tag,Weight,Status,Severity,ImpactedMetric,HTML\n' + result.originalElements.map(el => { const v = result.violations.find(v => v.html === el.html); return `${el.tagName},${el.weight},${v ? 'Violation' : 'OK'},${v?.severity || 'None'},${v?.impactedMetric || 'None'},"${el.html.replace(/"/g, '""')}"`; }).join('\n'); filename += '.csv'; }
     const blob = new Blob([content], { type: 'text/plain' }); const urlBlob = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = urlBlob; a.download = filename; a.click(); URL.revokeObjectURL(urlBlob);
@@ -182,7 +182,7 @@ export default function CapoAuditor() {
     }).join('\n');
     const blob = new Blob([header + rows], { type: 'text/plain' });
     const urlBlob = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = urlBlob; a.download = 'capo-batch-audit.csv'; a.click(); URL.revokeObjectURL(urlBlob);
+    const a = document.createElement('a'); a.href = urlBlob; a.download = '-batch-audit.csv'; a.click(); URL.revokeObjectURL(urlBlob);
   };
 
   return (
@@ -191,10 +191,10 @@ export default function CapoAuditor() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center gap-3 mb-4">
             <Activity className="w-8 h-8 text-indigo-400" />
-            <h1 className="text-3xl font-bold text-white tracking-tight">Capo &lt;head&gt; Auditor</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight"> &lt;head&gt; Auditor</h1>
           </div>
           <p className="text-slate-400 mb-8 max-w-2xl">
-            Analyze, visualize, and optimize the ordering of your document&apos;s `&lt;head&gt;` elements based on the Capo.js specification to drastically improve First Contentful Paint.
+            Analyze, visualize, and optimize the ordering of your document&apos;s `&lt;head&gt;` elements based on the .js specification to drastically improve First Contentful Paint.
           </p>
 
           <form onSubmit={handleAudit} className="max-w-3xl space-y-4">
@@ -297,7 +297,7 @@ export default function CapoAuditor() {
         <main className="max-w-6xl mx-auto px-6 py-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-center">
-              <span className="text-sm font-medium text-slate-400 mb-2">Capo Order Score</span>
+              <span className="text-sm font-medium text-slate-400 mb-2"> Order Score</span>
               <div className="flex items-end gap-3"><span className={cn("text-5xl font-bold", result.score > 80 ? "text-green-400" : result.score > 50 ? "text-yellow-400" : "text-red-400")}>{result.score}%</span></div>
             </div>
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-center">
@@ -383,7 +383,7 @@ export default function CapoAuditor() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-2 uppercase tracking-wider font-semibold">Optimal Capo Order</label>
+                <label className="block text-sm text-slate-400 mb-2 uppercase tracking-wider font-semibold">Optimal  Order</label>
                 <div className="flex h-12 w-full rounded overflow-hidden shadow-inner bg-slate-950">
                   {result.optimizedElements.map((el, i) => (<div key={i} className="h-full border-r border-slate-950/20 hover:opacity-80 transition cursor-help" style={{ width: `${100 / result.optimizedElements.length}%`, backgroundColor: el.color }} title={`<${el.tagName}> (Weight: ${el.weight})`} />))}
                 </div>
